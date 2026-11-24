@@ -1,22 +1,25 @@
 package fr.elvis.roll35
 
-import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
-import android.provider.MediaStore
+import android.util.Log
+import android.util.Size
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraEffect
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.UseCaseGroup
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.core.util.Consumer
 import androidx.lifecycle.LifecycleOwner
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -24,18 +27,32 @@ import java.util.Locale
 /**
  * Toute la partie caméra : viseur + prise de photo, avec CameraX.
  *
- * Point d'entrée de l'étape 3 : [effect]. Un CameraEffect (traitement OpenGL)
- * ajouté au UseCaseGroup s'applique à la fois au viseur ET aux photos
- * enregistrées. Il suffira d'y brancher le shader « pellicule » (LUT 3D,
- * grain, halation) puis d'appeler [rebind].
+ * Le viseur passe par [FilmProcessor] (filtre GPU en direct). Les photos sont
+ * prises en pleine résolution puis développées par [PhotoDeveloper] avec la
+ * même pellicule, et le même code GPU.
  */
 class FilmCamera(
     private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
     private val previewView: PreviewView,
 ) {
-    /** Filtre GPU appliqué au viseur et aux photos. `null` = image d'origine. */
-    var effect: CameraEffect? = null
+    private val processor = FilmProcessor()
+    private val developer = PhotoDeveloper(context)
+
+    /** Filtre GPU du viseur, branché en permanence. */
+    private val effect = object : CameraEffect(
+        CameraEffect.PREVIEW,
+        processor.executor,
+        processor,
+        Consumer<Throwable> { Log.e("Roll35", "Erreur du filtre", it) },
+    ) {}
+
+    /** Pellicule active. `null` = image d'origine. */
+    var film: Film? = null
+        set(value) {
+            field = value
+            processor.setFilm(value)
+        }
 
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var cameraProvider: ProcessCameraProvider? = null
@@ -47,6 +64,17 @@ class FilmCamera(
     // Format 4:3 = tout le capteur du téléphone, comme un appareil photo.
     private val resolutionSelector = ResolutionSelector.Builder()
         .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+        .build()
+
+    // Photos : environ 12 Mpx au maximum, pour rester rapide et éviter de saturer la mémoire.
+    private val photoResolutionSelector = ResolutionSelector.Builder()
+        .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+        .setResolutionStrategy(
+            ResolutionStrategy(
+                Size(4032, 3024),
+                ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER,
+            ),
+        )
         .build()
 
     fun start(onReady: () -> Unit, onError: (Throwable) -> Unit) {
@@ -77,7 +105,7 @@ class FilmCamera(
 
         val capture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-            .setResolutionSelector(resolutionSelector)
+            .setResolutionSelector(photoResolutionSelector)
             .setTargetRotation(previewView.display?.rotation ?: 0)
             .build()
         imageCapture = capture
@@ -85,7 +113,7 @@ class FilmCamera(
         val group = UseCaseGroup.Builder()
             .addUseCase(preview)
             .addUseCase(capture)
-        effect?.let { group.addEffect(it) }
+            .addEffect(effect)
 
         val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
         provider.unbindAll()
@@ -114,31 +142,40 @@ class FilmCamera(
         control.startFocusAndMetering(FocusMeteringAction.Builder(point).build())
     }
 
-    /** Prend une photo et l'enregistre dans la galerie (Pictures/Roll35). */
-    fun takePhoto(onSaved: (Uri?) -> Unit, onError: (ImageCaptureException) -> Unit) {
+    /**
+     * Prend une photo, la développe avec la pellicule active et l'enregistre
+     * dans la galerie (Pictures/Roll35). Les rappels arrivent sur le thread principal.
+     */
+    fun takePhoto(onSaved: (Uri?) -> Unit, onError: (Throwable) -> Unit) {
         val capture = imageCapture ?: return
-
+        val filmAtShot = film
+        val saved = onSaved
+        val failed = onError
         val name = "R35_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.FRANCE)
             .format(System.currentTimeMillis())
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Roll35")
-        }
-        val options = ImageCapture.OutputFileOptions.Builder(
-            context.contentResolver,
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            values,
-        ).build()
 
-        capture.takePicture(options, mainExecutor, object : ImageCapture.OnImageSavedCallback {
-            override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                onSaved(output.savedUri)
+        capture.takePicture(developer.executor, object : ImageCapture.OnImageCapturedCallback() {
+            override fun onCaptureSuccess(image: ImageProxy) {
+                try {
+                    val rotation = image.imageInfo.rotationDegrees
+                    val bitmap = image.use { it.toBitmap() }
+                    val uri = developer.develop(bitmap, rotation, filmAtShot, name)
+                    mainExecutor.execute { saved(uri) }
+                } catch (t: Throwable) {
+                    Log.e("Roll35", "Développement de la photo", t)
+                    mainExecutor.execute { failed(t) }
+                }
             }
 
             override fun onError(exception: ImageCaptureException) {
-                onError(exception)
+                mainExecutor.execute { failed(exception) }
             }
         })
+    }
+
+    fun release() {
+        cameraProvider?.unbindAll()
+        processor.release()
+        developer.release()
     }
 }
