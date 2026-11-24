@@ -15,6 +15,17 @@ android {
         versionName = "0.2"
     }
 
+    // Clé fixe (clé de débogage standard, sans valeur secrète) : chaque APK
+    // compilé sur GitHub peut ainsi mettre à jour le précédent sur le téléphone.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("roll35-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
