@@ -16,6 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -305,6 +306,19 @@ class MainActivity : AppCompatActivity() {
     private fun applyFraming(framing: Framing) {
         filmCamera.framing = framing
         binding.frameMask.framing = framing
+        // 9:16 : viseur haut et pleine largeur, qui passe sous les réglages du bas.
+        (binding.viewFinder.layoutParams as ConstraintLayout.LayoutParams).apply {
+            if (framing.vertical) {
+                dimensionRatio = "9:16"
+                bottomToTop = ConstraintLayout.LayoutParams.UNSET
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            } else {
+                dimensionRatio = "3:4"
+                bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+                bottomToTop = R.id.exposureRow
+            }
+            binding.viewFinder.layoutParams = this
+        }
         binding.framingButton.text = framing.label
         prefs.edit().putString(KEY_FRAMING, framing.name).apply()
     }
