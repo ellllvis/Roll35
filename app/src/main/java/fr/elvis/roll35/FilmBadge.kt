@@ -21,7 +21,7 @@ class FilmBadge private constructor(
     private val big: Boolean,
 ) : Drawable() {
 
-    enum class Style { SCREEN, BOX, NONE }
+    enum class Style { SCREEN, BOX, KODAK, NONE }
 
     class Spec(
         val style: Style,
@@ -31,6 +31,8 @@ class FilmBadge private constructor(
         val fill: Int = 0xFF000000.toInt(),
         val textColor: Int = 0xFFFFFFFF.toInt(),
         val stripe: Int = 0,
+        /** Style Kodak : code dans une pastille de couleur à gauche. */
+        val code: String? = null,
     )
 
     private val scale = if (big) 1.15f else 1f
@@ -38,8 +40,9 @@ class FilmBadge private constructor(
     private val padX = 6f * density * scale
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = (if (spec.style == Style.BOX) 13f else 10.5f) * density * scale
-        typeface = if (spec.style == Style.BOX) {
+        val condensed = spec.style == Style.BOX || spec.style == Style.KODAK
+        textSize = (if (condensed) 13f else 10.5f) * density * scale
+        typeface = if (condensed) {
             Typeface.create("sans-serif-condensed", Typeface.BOLD)
         } else {
             Typeface.create("sans-serif-medium", Typeface.NORMAL)
@@ -47,9 +50,10 @@ class FilmBadge private constructor(
         color = when (spec.style) {
             Style.NONE -> 0xFF9A9A94.toInt()
             Style.SCREEN -> 0xFFFFFFFF.toInt()
-            Style.BOX -> spec.textColor
+            Style.BOX, Style.KODAK -> spec.textColor
         }
     }
+    private val codePaint = Paint(textPaint).apply { color = 0xFFFFFFFF.toInt() }
     private val subPaint = Paint(textPaint).apply {
         textSize = textPaint.textSize * 0.72f
         typeface = Typeface.create("sans-serif", Typeface.BOLD)
@@ -69,7 +73,12 @@ class FilmBadge private constructor(
 
     private val textW = textPaint.measureText(spec.text)
     private val subW = spec.sub?.let { subPaint.measureText(it) + 2f * density } ?: 0f
-    private val w = maxOf(34f * density * scale, textW + subW + padX * 2)
+    private val codeW = spec.code?.let { codePaint.measureText(it) + 8f * density * scale } ?: 0f
+    private val w = if (spec.style == Style.KODAK) {
+        codeW + textW + 9f * density * scale
+    } else {
+        maxOf(34f * density * scale, textW + subW + padX * 2)
+    }
 
     override fun getIntrinsicWidth() = w.toInt()
     override fun getIntrinsicHeight() = h.toInt()
@@ -96,6 +105,17 @@ class FilmBadge private constructor(
                 canvas.drawLine(r.left + inset, r.top + dy, r.right - inset, r.top + dy, dotsPaint)
                 canvas.drawLine(r.left + inset, r.bottom - dy, r.right - inset, r.bottom - dy, dotsPaint)
             }
+            Style.KODAK -> {
+                // Boîte jaune, pastille de couleur à gauche.
+                val rad = 2 * density
+                fillPaint.color = 0xFFFFB81C.toInt()
+                canvas.drawRoundRect(r, rad, rad, fillPaint)
+                fillPaint.color = spec.fill
+                canvas.save()
+                canvas.clipRect(r.left, r.top, r.left + codeW, r.bottom)
+                canvas.drawRoundRect(r, rad, rad, fillPaint)
+                canvas.restore()
+            }
             Style.BOX -> {
                 fillPaint.color = spec.fill
                 val rad = 2 * density
@@ -108,9 +128,15 @@ class FilmBadge private constructor(
                 canvas.restore()
             }
         }
+        val fm = textPaint.fontMetrics
+        if (spec.style == Style.KODAK) {
+            val baseline = r.centerY() - (fm.ascent + fm.descent) / 2
+            canvas.drawText(spec.code ?: "", r.left + 4f * density * scale, baseline, codePaint)
+            canvas.drawText(spec.text, r.left + codeW + 4f * density * scale, baseline, textPaint)
+            return
+        }
         val total = textW + subW
         val x = r.centerX() - total / 2
-        val fm = textPaint.fontMetrics
         val lift = if (spec.style == Style.BOX) 1.2f * density * scale else 0f
         val baseline = r.centerY() - (fm.ascent + fm.descent) / 2 - lift
         canvas.drawText(spec.text, x, baseline, textPaint)
@@ -132,6 +158,9 @@ class FilmBadge private constructor(
 
         private fun box(text: String, fill: Long, textColor: Long, stripe: Long) =
             Spec(Style.BOX, text, fill = fill.toInt(), textColor = textColor.toInt(), stripe = stripe.toInt())
+
+        private fun kodak(code: String, text: String, color: Long) =
+            Spec(Style.KODAK, text, fill = color.toInt(), textColor = 0xFF111111.toInt(), code = code)
 
         private val SPECS = mapOf(
             "standard" to screen("STD"),
@@ -160,6 +189,7 @@ class FilmBadge private constructor(
             "nb_cine" to box("BwXX", 0xFF0D0D0D, 0xFFFFFFFF, 0xFFFFFFFF),
             "redscale" to box("RED", 0xFF7A0C0C, 0xFFFFD9A8, 0xFFE2511F),
             "pastel_pro" to box("400H", 0xFFE9F3EE, 0xFF1F6B4E, 0xFF3FA37A),
+            "grand_public_400" to kodak("UM", "400", 0xFFD4202C),
         )
 
         private val NONE = Spec(Style.NONE, "—")

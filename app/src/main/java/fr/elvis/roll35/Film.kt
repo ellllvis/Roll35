@@ -194,6 +194,22 @@ object FilmLibrary {
             ),
             grain = 0.03f,
         ),
+
+        // --- Kodak ---
+        // UltraMax 400 : chaude, contrastée, couleurs franches (rouges vifs,
+        // verts tirant vers le jaune), ombres un peu jaune-vert, grain présent.
+        Film(
+            "grand_public_400", "Grand public 400", P,
+            saturation = 1.12f, contrast = 15f, shadows = -5f,
+            shadowTint = Tint(80f, 6f), highlightTint = Tint(40f, 8f),
+            wbShift = 6f,
+            hues = listOf(
+                HueShift(0f, sat = 1.15f),
+                HueShift(120f, shift = -8f),
+                HueShift(220f, sat = 1.05f),
+            ),
+            grain = 0.045f,
+        ),
     )
 
     fun byId(id: String?): Film? = all.firstOrNull { it.id == id }
