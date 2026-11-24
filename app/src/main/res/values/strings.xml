@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Roll35</string>
+    <string name="shutter">Prendre une photo</string>
+    <string name="switch_camera">Changer de caméra</string>
+    <string name="photo_saved">Photo enregistrée dans la galerie (Pictures/Roll35)</string>
+    <string name="photo_failed">Échec de la photo : %1$s</string>
+    <string name="camera_failed">Impossible d\'ouvrir la caméra</string>
+    <string name="permission_needed">L\'application a besoin de la caméra pour fonctionner.</string>
+    <string name="grant_permission">Autoriser la caméra</string>
+    <string name="film_none">Sans pellicule</string>
+</resources>
