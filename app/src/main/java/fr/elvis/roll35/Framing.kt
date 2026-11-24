@@ -10,23 +10,26 @@ import android.view.View
 /**
  * Formats de cadrage. [long] / [short] = rapport grand côté / petit côté.
  * L'image vient toujours du capteur entier (4:3), puis elle est recadrée au centre.
- * 4:3 garde tout le capteur ; les autres formats sont horizontaux et prennent
- * toute la largeur de l'image.
+ * 4:3 garde tout le capteur ; 3:2, 5:4 et 1:1 sont horizontaux et prennent
+ * toute la largeur ; 9:16 est vertical (les côtés du capteur sont coupés).
  */
 enum class Framing(val label: String, val long: Float, val short: Float) {
     F4_3("4:3", 4f, 3f),
     F3_2("3:2", 3f, 2f),
     F5_4("5:4", 5f, 4f),
     F1_1("1:1", 1f, 1f),
-    F16_9("16:9", 16f, 9f);
+    F9_16("9:16", 16f, 9f);
+
+    /** 9:16 est vertical : le viseur s'agrandit en hauteur pour rester en pleine largeur. */
+    val vertical: Boolean get() = this == F9_16
 
     val ratio: Float get() = long / short
 
     /** Rectangle centré de ce format dans une image [w]×[h]. */
     fun fit(w: Float, h: Float): RectF {
         if (this == F4_3) return RectF(0f, 0f, w, h)
-        // Rapport largeur / hauteur voulu : toujours horizontal, pleine largeur.
-        val target = long / short
+        // Rapport largeur / hauteur voulu.
+        val target = if (vertical) short / long else long / short
         var cw = w
         var ch = w / target
         if (ch > h) {
