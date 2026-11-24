@@ -14,8 +14,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/filmStrip"
-        app:layout_constraintVertical_bias="0.3" />
+        app:layout_constraintBottom_toTopOf="@id/exposureRow"
+        app:layout_constraintVertical_bias="0" />
 
     <!-- Masque du format de cadrage -->
     <fr.elvis.roll35.FrameMaskView
@@ -68,6 +68,51 @@
         app:layout_constraintTop_toTopOf="@id/viewFinder"
         app:layout_constraintBottom_toBottomOf="@id/viewFinder" />
 
+    <!-- Réglages manuels : ISO et vitesse -->
+    <LinearLayout
+        android:id="@+id/exposureRow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/filmStrip">
+
+        <TextView
+            android:id="@+id/isoButton"
+            style="@style/SettingPill"
+            android:text="@string/iso_auto" />
+
+        <TextView
+            android:id="@+id/speedButton"
+            style="@style/SettingPill"
+            android:layout_marginStart="10dp"
+            android:text="@string/speed_auto" />
+    </LinearLayout>
+
+    <!-- Valeurs ISO ou vitesse, à la place des pellicules pendant le réglage -->
+    <HorizontalScrollView
+        android:id="@+id/valueStrip"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scrollbars="none"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="@id/filmStrip"
+        app:layout_constraintEnd_toEndOf="@id/filmStrip"
+        app:layout_constraintTop_toTopOf="@id/filmStrip"
+        app:layout_constraintBottom_toBottomOf="@id/filmStrip">
+
+        <LinearLayout
+            android:id="@+id/valueChips"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp" />
+    </HorizontalScrollView>
+
     <!-- Sélecteur de pellicule : bande qui défile horizontalement -->
     <HorizontalScrollView
         android:id="@+id/filmStrip"
@@ -91,7 +136,8 @@
     <FrameLayout
         android:id="@+id/controls"
         android:layout_width="0dp"
-        android:layout_height="140dp"
+        android:layout_height="112dp"
+        android:layout_marginBottom="12dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">

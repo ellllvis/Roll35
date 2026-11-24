@@ -11,7 +11,8 @@ Application Android personnelle : un appareil photo qui simule des pellicules
 3. ✅ Sélecteur de pellicule en direct (bande de pastilles ou glisser sur le viseur),
    filtre GPU appliqué au viseur et aux photos : table de couleurs 3D, grain, halo rouge
 5. ✅ Zoom à deux doigts et boutons d'objectif (0,6× à 10× selon le téléphone)
-6. ✅ Formats de cadrage : 4:3, 3:2, 5:4, 1:1, 16:9
+6. ✅ Formats de cadrage : 4:3 (capteur entier), 3:2, 5:4, 1:1, 16:9 (horizontaux, pleine largeur)
+7. ✅ Réglage manuel des ISO et de la vitesse
 4. ✅ Installation de l'APK sur le téléphone (voir ci-dessous)
 
 ## Technique

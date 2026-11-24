@@ -5,4 +5,16 @@
         <item name="android:navigationBarColor">@android:color/black</item>
         <item name="colorAccent">#FFE8C26A</item>
     </style>
+
+    <style name="SettingPill" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/chip_film</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+        <item name="android:textColor">#FFFFFFFF</item>
+        <item name="android:textSize">13sp</item>
+    </style>
 </resources>

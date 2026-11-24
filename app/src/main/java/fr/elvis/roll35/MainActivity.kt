@@ -17,6 +17,8 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import fr.elvis.roll35.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -44,6 +46,13 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Garde l'interface hors de la barre d'état et de la barre de navigation.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+
         filmCamera = FilmCamera(this, this, binding.viewFinder)
 
         binding.shutter.setOnClickListener { takePhoto() }
@@ -54,6 +63,9 @@ class MainActivity : AppCompatActivity() {
         setupFilmPicker()
         setupFraming()
         filmCamera.onZoomChanged = ::showZoom
+        filmCamera.onCameraBound = { closeValueStrip(); showExposure() }
+        binding.isoButton.setOnClickListener { toggleValueStrip(Setting.ISO) }
+        binding.speedButton.setOnClickListener { toggleValueStrip(Setting.SPEED) }
         setupViewfinderGestures()
 
         if (hasCameraPermission()) {
@@ -170,6 +182,114 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    // --- ISO et vitesse ---
+
+    private enum class Setting { ISO, SPEED }
+
+    private var openSetting: Setting? = null
+
+    private fun toggleValueStrip(setting: Setting) {
+        if (openSetting == setting) {
+            closeValueStrip()
+            return
+        }
+        val ranges = filmCamera.manualRanges()
+        if (ranges == null) {
+            Toast.makeText(this, R.string.manual_unsupported, Toast.LENGTH_LONG).show()
+            return
+        }
+        openSetting = setting
+        val (isoRange, expRange) = ranges
+        val row = binding.valueChips
+        row.removeAllViews()
+
+        // Valeurs proposées : « Auto » puis celles que la caméra accepte.
+        val values: List<Long?> = listOf<Long?>(null) + when (setting) {
+            Setting.ISO -> ISO_VALUES.filter { it in isoRange }.map { it.toLong() }
+            Setting.SPEED -> SPEEDS_NS.filter { it in expRange }
+        }
+        val current: Long? = when (setting) {
+            Setting.ISO -> filmCamera.manualIso?.toLong()
+            Setting.SPEED -> filmCamera.manualExposureNs
+        }
+        var selectedChip: TextView? = null
+        values.forEach { value ->
+            val chip = TextView(this).apply {
+                text = when {
+                    value == null -> getString(R.string.auto)
+                    setting == Setting.ISO -> value.toString()
+                    else -> formatSpeed(value)
+                }
+                setTextColor(0xFFFFFFFF.toInt())
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                setBackgroundResource(R.drawable.chip_film)
+                setPadding(dp(14), dp(7), dp(14), dp(7))
+                isSelected = value == current
+                setOnClickListener { pickValue(setting, value) }
+            }
+            if (chip.isSelected) selectedChip = chip
+            row.addView(chip, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { marginEnd = dp(8) })
+        }
+        binding.filmStrip.visibility = View.INVISIBLE
+        binding.valueStrip.visibility = View.VISIBLE
+        binding.isoButton.isSelected = setting == Setting.ISO
+        binding.speedButton.isSelected = setting == Setting.SPEED
+        selectedChip?.let { chip ->
+            binding.valueStrip.post {
+                val x = chip.left - (binding.valueStrip.width - chip.width) / 2
+                binding.valueStrip.scrollTo(x.coerceAtLeast(0), 0)
+            }
+        }
+    }
+
+    private fun closeValueStrip() {
+        openSetting = null
+        binding.valueStrip.visibility = View.GONE
+        binding.filmStrip.visibility = View.VISIBLE
+        binding.isoButton.isSelected = false
+        binding.speedButton.isSelected = false
+    }
+
+    /**
+     * Applique le choix. La caméra ne règle l'un que si l'autre est fixé aussi :
+     * choisir un ISO fixe la vitesse à 1/125 si elle était auto, et choisir une
+     * vitesse fixe l'ISO à 400. « Auto » remet les deux en automatique.
+     */
+    private fun pickValue(setting: Setting, value: Long?) {
+        var iso = filmCamera.manualIso
+        var exp = filmCamera.manualExposureNs
+        if (value == null) {
+            iso = null
+            exp = null
+        } else if (setting == Setting.ISO) {
+            iso = value.toInt()
+            if (exp == null) exp = DEFAULT_SPEED_NS
+        } else {
+            exp = value
+            if (iso == null) iso = DEFAULT_ISO
+        }
+        if (!filmCamera.setManualExposure(iso, exp)) {
+            Toast.makeText(this, R.string.manual_unsupported, Toast.LENGTH_LONG).show()
+        }
+        showExposure()
+        closeValueStrip()
+    }
+
+    private fun showExposure() {
+        val iso = filmCamera.manualIso
+        val exp = filmCamera.manualExposureNs
+        binding.isoButton.text = if (iso == null) getString(R.string.iso_auto) else "ISO $iso"
+        binding.speedButton.text = if (exp == null) getString(R.string.speed_auto) else formatSpeed(exp)
+    }
+
+    private fun formatSpeed(ns: Long): String {
+        val seconds = ns / 1_000_000_000.0
+        return if (seconds >= 0.95) "${Math.round(seconds)}\"" else "1/${Math.round(1 / seconds)}"
+    }
 
     // --- Format de cadrage ---
 
@@ -298,5 +418,18 @@ class MainActivity : AppCompatActivity() {
     private companion object {
         const val KEY_FILM = "film"
         const val KEY_FRAMING = "framing"
+
+        val ISO_VALUES = intArrayOf(
+            50, 64, 80, 100, 125, 160, 200, 250, 320, 400, 500, 640,
+            800, 1000, 1250, 1600, 2000, 2500, 3200, 4000, 5000, 6400,
+        )
+
+        /** Vitesses en nanosecondes, de 1/8000 s à 1 s. */
+        val SPEEDS_NS: List<Long> = listOf(
+            8000, 4000, 2000, 1000, 500, 250, 125, 60, 30, 15, 8, 4, 2,
+        ).map { 1_000_000_000L / it } + 1_000_000_000L
+
+        const val DEFAULT_ISO = 400
+        const val DEFAULT_SPEED_NS = 1_000_000_000L / 125
     }
 }

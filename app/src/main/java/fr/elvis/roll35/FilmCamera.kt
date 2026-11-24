@@ -1,9 +1,18 @@
 package fr.elvis.roll35
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraMetadata
+import android.hardware.camera2.CaptureRequest
 import android.net.Uri
 import android.util.Log
 import android.util.Size
+import androidx.annotation.OptIn
+import androidx.camera.camera2.interop.Camera2CameraControl
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.CaptureRequestOptions
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraEffect
 import androidx.camera.core.CameraSelector
@@ -73,6 +82,15 @@ class FilmCamera(
         onZoomChanged?.invoke(z.zoomRatio, z.minZoomRatio, z.maxZoomRatio)
     }
 
+    /** Appelé après chaque (re)démarrage de la caméra, par exemple au changement d'objectif. */
+    var onCameraBound: (() -> Unit)? = null
+
+    /** Réglage manuel actuel (`null` = automatique). */
+    var manualIso: Int? = null
+        private set
+    var manualExposureNs: Long? = null
+        private set
+
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var cameraProvider: ProcessCameraProvider? = null
     private var imageCapture: ImageCapture? = null
@@ -140,6 +158,54 @@ class FilmCamera(
         camera = cam
         zoomLive?.removeObserver(zoomObserver)
         zoomLive = cam.cameraInfo.zoomState.also { it.observe(lifecycleOwner, zoomObserver) }
+        // Une nouvelle caméra repart en automatique.
+        manualIso = null
+        manualExposureNs = null
+        onCameraBound?.invoke()
+    }
+
+    /** Plages ISO et temps de pose (en nanosecondes) acceptées, ou `null` si pas de réglage manuel. */
+    @SuppressLint("UnsafeOptInUsageError")
+    @OptIn(ExperimentalCamera2Interop::class)
+    fun manualRanges(): Pair<IntRange, LongRange>? {
+        val cam = camera ?: return null
+        val info = Camera2CameraInfo.from(cam.cameraInfo)
+        val caps = info.getCameraCharacteristic(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
+        if (caps == null || CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR !in caps) return null
+        val iso = info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE) ?: return null
+        val exp = info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE) ?: return null
+        return (iso.lower..iso.upper) to (exp.lower..exp.upper)
+    }
+
+    /**
+     * Exposition manuelle : ISO et temps de pose ensemble, ou les deux `null`
+     * pour revenir en automatique. S'applique au viseur et aux photos.
+     */
+    @SuppressLint("UnsafeOptInUsageError")
+    @OptIn(ExperimentalCamera2Interop::class)
+    fun setManualExposure(iso: Int?, exposureNs: Long?): Boolean {
+        val cam = camera ?: return false
+        val control = Camera2CameraControl.from(cam.cameraControl)
+        if (iso == null || exposureNs == null) {
+            control.clearCaptureRequestOptions()
+            manualIso = null
+            manualExposureNs = null
+            return true
+        }
+        val (isoRange, expRange) = manualRanges() ?: return false
+        val i = iso.coerceIn(isoRange.first, isoRange.last)
+        val e = exposureNs.coerceIn(expRange.first, expRange.last)
+        control.setCaptureRequestOptions(
+            CaptureRequestOptions.Builder()
+                .setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
+                .setCaptureRequestOption(CaptureRequest.SENSOR_SENSITIVITY, i)
+                .setCaptureRequestOption(CaptureRequest.SENSOR_EXPOSURE_TIME, e)
+                .setCaptureRequestOption(CaptureRequest.SENSOR_FRAME_DURATION, maxOf(e, 33_333_333L))
+                .build(),
+        )
+        manualIso = i
+        manualExposureNs = e
+        return true
     }
 
     /** Zoom actuel (1 = objectif principal). */
