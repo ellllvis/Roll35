@@ -82,12 +82,12 @@
 
         <TextView
             android:id="@+id/isoButton"
-            style="@style/Roll35.SettingPill"
+            style="@style/SettingPill"
             android:text="@string/iso_auto" />
 
         <TextView
             android:id="@+id/speedButton"
-            style="@style/Roll35.SettingPill"
+            style="@style/SettingPill"
             android:layout_marginStart="10dp"
             android:text="@string/speed_auto" />
     </LinearLayout>

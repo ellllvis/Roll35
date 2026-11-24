@@ -6,7 +6,7 @@
         <item name="colorAccent">#FFE8C26A</item>
     </style>
 
-    <style name="Roll35.SettingPill">
+    <style name="SettingPill" parent="">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@drawable/chip_film</item>
