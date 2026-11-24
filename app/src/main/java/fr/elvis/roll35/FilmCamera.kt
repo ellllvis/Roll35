@@ -13,6 +13,7 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.ZoomState
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
@@ -21,6 +22,8 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -53,6 +56,22 @@ class FilmCamera(
             field = value
             processor.setFilm(value)
         }
+
+    /** Format de cadrage appliqué aux photos. */
+    var framing: Framing = Framing.F4_3
+
+    /**
+     * Appelé à chaque changement de zoom (ratio actuel, minimum, maximum).
+     * Sur les Galaxy Ultra, la caméra arrière regroupe tous les objectifs :
+     * le téléphone passe tout seul sur l'ultra grand-angle sous 1× et sur les
+     * téléobjectifs à 3× et 5×.
+     */
+    var onZoomChanged: ((ratio: Float, min: Float, max: Float) -> Unit)? = null
+
+    private var zoomLive: LiveData<ZoomState>? = null
+    private val zoomObserver = Observer<ZoomState> { z ->
+        onZoomChanged?.invoke(z.zoomRatio, z.minZoomRatio, z.maxZoomRatio)
+    }
 
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var cameraProvider: ProcessCameraProvider? = null
@@ -117,7 +136,21 @@ class FilmCamera(
 
         val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
         provider.unbindAll()
-        camera = provider.bindToLifecycle(lifecycleOwner, selector, group.build())
+        val cam = provider.bindToLifecycle(lifecycleOwner, selector, group.build())
+        camera = cam
+        zoomLive?.removeObserver(zoomObserver)
+        zoomLive = cam.cameraInfo.zoomState.also { it.observe(lifecycleOwner, zoomObserver) }
+    }
+
+    /** Zoom actuel (1 = objectif principal). */
+    val zoomRatio: Float get() = zoomLive?.value?.zoomRatio ?: 1f
+
+    /** Règle le zoom, borné à ce que la caméra accepte. */
+    fun setZoom(ratio: Float) {
+        val cam = camera ?: return
+        val z = cam.cameraInfo.zoomState.value
+        val r = if (z != null) ratio.coerceIn(z.minZoomRatio, z.maxZoomRatio) else ratio
+        cam.cameraControl.setZoomRatio(r)
     }
 
     fun canSwitchLens(): Boolean {
@@ -149,6 +182,7 @@ class FilmCamera(
     fun takePhoto(onSaved: (Uri?) -> Unit, onError: (Throwable) -> Unit) {
         val capture = imageCapture ?: return
         val filmAtShot = film
+        val framingAtShot = framing
         val saved = onSaved
         val failed = onError
         val name = "R35_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.FRANCE)
@@ -159,7 +193,7 @@ class FilmCamera(
                 try {
                     val rotation = image.imageInfo.rotationDegrees
                     val bitmap = image.use { it.toBitmap() }
-                    val uri = developer.develop(bitmap, rotation, filmAtShot, name)
+                    val uri = developer.develop(bitmap, rotation, filmAtShot, framingAtShot, name)
                     mainExecutor.execute { saved(uri) }
                 } catch (t: Throwable) {
                     Log.e("Roll35", "Développement de la photo", t)

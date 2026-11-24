@@ -34,8 +34,14 @@ class PhotoDeveloper(private val context: Context) {
     private var filmLoaded = false
 
     /** À appeler sur [executor]. Renvoie l'adresse de la photo enregistrée. */
-    fun develop(source: Bitmap, rotationDegrees: Int, film: Film?, name: String): Uri {
-        val developed = render(source, film)
+    fun develop(
+        source: Bitmap,
+        rotationDegrees: Int,
+        film: Film?,
+        framing: Framing,
+        name: String,
+    ): Uri {
+        val developed = render(crop(source, rotationDegrees, framing), film)
         val rotated = if (rotationDegrees != 0) {
             val m = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
             Bitmap.createBitmap(developed, 0, 0, developed.width, developed.height, m, true)
@@ -48,6 +54,21 @@ class PhotoDeveloper(private val context: Context) {
         } finally {
             rotated.recycle()
         }
+    }
+
+    /** Recadre au centre selon le format (calculé dans le sens final de la photo). */
+    private fun crop(source: Bitmap, rotationDegrees: Int, framing: Framing): Bitmap {
+        val sideways = rotationDegrees % 180 != 0
+        val w = (if (sideways) source.height else source.width).toFloat()
+        val h = (if (sideways) source.width else source.height).toFloat()
+        val r = framing.fit(w, h)
+        // Ramène le rectangle dans le sens de l'image source (non tournée).
+        val cw = (if (sideways) r.height() else r.width()).roundToInt().coerceIn(1, source.width)
+        val ch = (if (sideways) r.width() else r.height()).roundToInt().coerceIn(1, source.height)
+        if (cw == source.width && ch == source.height) return source
+        val x = (source.width - cw) / 2
+        val y = (source.height - ch) / 2
+        return Bitmap.createBitmap(source, x, y, cw, ch).also { if (it !== source) source.recycle() }
     }
 
     private fun render(source: Bitmap, film: Film?): Bitmap {
