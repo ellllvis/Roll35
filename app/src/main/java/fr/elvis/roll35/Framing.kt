@@ -16,8 +16,7 @@ enum class Framing(val label: String, val long: Float, val short: Float) {
     F3_2("3:2", 3f, 2f),
     F5_4("5:4", 5f, 4f),
     F1_1("1:1", 1f, 1f),
-    F16_9("16:9", 16f, 9f),
-    XPAN("XPan", 65f, 24f);
+    F16_9("16:9", 16f, 9f);
 
     val ratio: Float get() = long / short
 
