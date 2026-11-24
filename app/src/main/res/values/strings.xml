@@ -12,4 +12,8 @@
     <string name="group_films">Pellicules</string>
     <string name="framing">Format de cadrage</string>
     <string name="framing_toast">Format %1$s</string>
+    <string name="iso_auto">ISO auto</string>
+    <string name="speed_auto">Vitesse auto</string>
+    <string name="auto">Auto</string>
+    <string name="manual_unsupported">Ce mode de la caméra ne permet pas le réglage manuel</string>
 </resources>
