@@ -9,6 +9,7 @@ import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -27,6 +28,10 @@ class MainActivity : AppCompatActivity() {
     private val choices: List<Film?> = listOf<Film?>(null) + FilmLibrary.all
     private val chips = mutableListOf<TextView>()
     private var currentIndex = 0
+    private val zoomPresets = floatArrayOf(0.6f, 1f, 2f, 3f, 5f, 10f)
+    private val zoomChips = mutableListOf<Pair<Float, TextView>>()
+    private var zoomRange = 0f to 0f
+    private var zoomTarget = 1f
     private val prefs by lazy { getSharedPreferences("roll35", Context.MODE_PRIVATE) }
 
     private val requestPermission =
@@ -47,6 +52,7 @@ class MainActivity : AppCompatActivity() {
             requestPermission.launch(Manifest.permission.CAMERA)
         }
         setupFilmPicker()
+        filmCamera.onZoomChanged = ::showZoom
         setupViewfinderGestures()
 
         if (hasCameraPermission()) {
@@ -164,14 +170,82 @@ class MainActivity : AppCompatActivity() {
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
-    /** Toucher = mise au point ; glisser à gauche / à droite = pellicule suivante / précédente. */
+    // --- Zoom et objectifs ---
+
+    /** Met à jour les boutons d'objectif selon le zoom actuel. */
+    private fun showZoom(ratio: Float, min: Float, max: Float) {
+        if (zoomRange != (min to max)) {
+            zoomRange = min to max
+            buildZoomButtons(min, max)
+        }
+        // Le bouton actif est le dernier préréglage atteint ; il affiche le zoom exact.
+        val active = zoomChips.lastOrNull { ratio >= it.first - 0.05f } ?: zoomChips.firstOrNull()
+        zoomChips.forEach { (preset, chip) ->
+            val isActive = chip === active?.second
+            chip.isSelected = isActive
+            chip.text = formatZoom(if (isActive) ratio else preset)
+            chip.setTextColor(if (isActive) 0xFFE8C26A.toInt() else 0xFFFFFFFF.toInt())
+        }
+    }
+
+    private fun buildZoomButtons(min: Float, max: Float) {
+        val row = binding.zoomButtons
+        row.removeAllViews()
+        zoomChips.clear()
+        val presets = zoomPresets.filter { it >= min - 0.01f && it <= max + 0.01f }.toMutableList()
+        // L'ultra grand-angle n'est pas toujours à 0,6× pile : on prend le minimum réel.
+        if (min < 0.95f && presets.none { it < 1f }) presets.add(0, min)
+        else if (min < 0.95f) presets[0] = min
+        presets.forEach { preset ->
+            val chip = TextView(this).apply {
+                text = formatZoom(preset)
+                setTextColor(0xFFFFFFFF.toInt())
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                gravity = Gravity.CENTER
+                setBackgroundResource(R.drawable.zoom_button)
+                setOnClickListener { filmCamera.setZoom(preset) }
+            }
+            row.addView(chip, LinearLayout.LayoutParams(dp(42), dp(42)).apply {
+                marginStart = dp(2); marginEnd = dp(2)
+            })
+            zoomChips += preset to chip
+        }
+        row.visibility = if (presets.size > 1) View.VISIBLE else View.GONE
+    }
+
+    private fun formatZoom(r: Float): String {
+        val rounded = Math.round(r * 10f) / 10f
+        val text = if (rounded % 1f == 0f) rounded.toInt().toString()
+        else String.format(java.util.Locale.FRANCE, "%.1f", rounded)
+        return text + "×"
+    }
+
+    /**
+     * Viseur : toucher = mise au point ; pincer = zoom ;
+     * glisser à gauche / à droite = pellicule suivante / précédente.
+     */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupViewfinderGestures() {
+        val scale = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                zoomTarget = filmCamera.zoomRatio
+                return true
+            }
+
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                val (min, max) = zoomRange
+                zoomTarget *= detector.scaleFactor
+                if (max > 0f) zoomTarget = zoomTarget.coerceIn(min, max)
+                filmCamera.setZoom(zoomTarget)
+                return true
+            }
+        })
+        var pinched = false
         val detector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDown(e: MotionEvent) = true
 
             override fun onSingleTapUp(e: MotionEvent): Boolean {
-                filmCamera.focusAt(e.x, e.y)
+                if (!pinched) filmCamera.focusAt(e.x, e.y)
                 return true
             }
 
@@ -181,13 +255,20 @@ class MainActivity : AppCompatActivity() {
                 velocityX: Float,
                 velocityY: Float,
             ): Boolean {
+                if (pinched) return false
                 if (kotlin.math.abs(velocityX) < kotlin.math.abs(velocityY)) return false
                 val next = if (velocityX < 0) currentIndex + 1 else currentIndex - 1
                 if (next in choices.indices) selectFilm(next)
                 return true
             }
         })
-        binding.viewFinder.setOnTouchListener { _, event -> detector.onTouchEvent(event) }
+        binding.viewFinder.setOnTouchListener { _, event ->
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) pinched = false
+            if (event.pointerCount > 1) pinched = true
+            scale.onTouchEvent(event)
+            detector.onTouchEvent(event)
+            true
+        }
     }
 
     override fun onDestroy() {
