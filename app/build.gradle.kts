@@ -11,8 +11,8 @@ android {
         applicationId = "fr.elvis.roll35"
         minSdk = 29
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.5"
+        versionCode = 6
+        versionName = "0.6"
     }
 
     // Clé fixe (clé de débogage standard, sans valeur secrète) : chaque APK

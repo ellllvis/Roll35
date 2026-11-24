@@ -142,8 +142,11 @@ class MainActivity : AppCompatActivity() {
                 setTextColor(0xFFFFFFFF.toInt())
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
                 setBackgroundResource(R.drawable.chip_film)
-                setPadding(dp(14), dp(7), dp(14), dp(7))
+                setPadding(dp(14), dp(7), dp(14), dp(8))
                 gravity = Gravity.CENTER
+                // Badge de la pellicule sous son nom.
+                setCompoundDrawables(null, null, null, FilmBadge.forFilm(film, resources))
+                compoundDrawablePadding = dp(5)
                 setOnClickListener { selectFilm(index) }
             }
             row.addView(chip, LinearLayout.LayoutParams(
@@ -171,6 +174,8 @@ class MainActivity : AppCompatActivity() {
         val film = choices[currentIndex]
         filmCamera.film = film
         binding.filmName.text = film?.name ?: getString(R.string.film_none)
+        binding.filmName.setCompoundDrawables(FilmBadge.forFilm(film, resources), null, null, null)
+        binding.filmName.compoundDrawablePadding = dp(8)
         chips.forEachIndexed { i, chip -> chip.isSelected = i == currentIndex }
         prefs.edit().putString(KEY_FILM, film?.id).apply()
 
