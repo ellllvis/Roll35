@@ -10,4 +10,6 @@
     <string name="film_none">Sans filtre</string>
     <string name="group_simulations">X-E5</string>
     <string name="group_films">Pellicules</string>
+    <string name="framing">Format de cadrage</string>
+    <string name="framing_toast">Format %1$s</string>
 </resources>

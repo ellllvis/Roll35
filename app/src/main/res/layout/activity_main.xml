@@ -17,6 +17,16 @@
         app:layout_constraintBottom_toTopOf="@id/filmStrip"
         app:layout_constraintVertical_bias="0.3" />
 
+    <!-- Masque du format de cadrage -->
+    <fr.elvis.roll35.FrameMaskView
+        android:id="@+id/frameMask"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintStart_toStartOf="@id/viewFinder"
+        app:layout_constraintEnd_toEndOf="@id/viewFinder"
+        app:layout_constraintTop_toTopOf="@id/viewFinder"
+        app:layout_constraintBottom_toBottomOf="@id/viewFinder" />
+
     <!-- Nom de la pellicule active -->
     <TextView
         android:id="@+id/filmName"
@@ -93,6 +103,19 @@
             android:layout_gravity="center"
             android:background="@drawable/shutter_button"
             android:contentDescription="@string/shutter" />
+
+        <TextView
+            android:id="@+id/framingButton"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginStart="40dp"
+            android:background="@drawable/round_dark"
+            android:contentDescription="@string/framing"
+            android:gravity="center"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
         <ImageButton
             android:id="@+id/switchCamera"

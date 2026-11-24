@@ -57,6 +57,9 @@ class FilmCamera(
             processor.setFilm(value)
         }
 
+    /** Format de cadrage appliqué aux photos. */
+    var framing: Framing = Framing.F4_3
+
     /**
      * Appelé à chaque changement de zoom (ratio actuel, minimum, maximum).
      * Sur les Galaxy Ultra, la caméra arrière regroupe tous les objectifs :
@@ -179,6 +182,7 @@ class FilmCamera(
     fun takePhoto(onSaved: (Uri?) -> Unit, onError: (Throwable) -> Unit) {
         val capture = imageCapture ?: return
         val filmAtShot = film
+        val framingAtShot = framing
         val saved = onSaved
         val failed = onError
         val name = "R35_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.FRANCE)
@@ -189,7 +193,7 @@ class FilmCamera(
                 try {
                     val rotation = image.imageInfo.rotationDegrees
                     val bitmap = image.use { it.toBitmap() }
-                    val uri = developer.develop(bitmap, rotation, filmAtShot, name)
+                    val uri = developer.develop(bitmap, rotation, filmAtShot, framingAtShot, name)
                     mainExecutor.execute { saved(uri) }
                 } catch (t: Throwable) {
                     Log.e("Roll35", "Développement de la photo", t)

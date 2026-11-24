@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
             requestPermission.launch(Manifest.permission.CAMERA)
         }
         setupFilmPicker()
+        setupFraming()
         filmCamera.onZoomChanged = ::showZoom
         setupViewfinderGestures()
 
@@ -170,6 +171,24 @@ class MainActivity : AppCompatActivity() {
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
+    // --- Format de cadrage ---
+
+    private fun setupFraming() {
+        applyFraming(Framing.byName(prefs.getString(KEY_FRAMING, null)))
+        binding.framingButton.setOnClickListener {
+            val next = filmCamera.framing.next()
+            applyFraming(next)
+            Toast.makeText(this, getString(R.string.framing_toast, next.label), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun applyFraming(framing: Framing) {
+        filmCamera.framing = framing
+        binding.frameMask.framing = framing
+        binding.framingButton.text = framing.label
+        prefs.edit().putString(KEY_FRAMING, framing.name).apply()
+    }
+
     // --- Zoom et objectifs ---
 
     /** Met à jour les boutons d'objectif selon le zoom actuel. */
@@ -278,5 +297,6 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         const val KEY_FILM = "film"
+        const val KEY_FRAMING = "framing"
     }
 }
