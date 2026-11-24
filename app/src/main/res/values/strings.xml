@@ -7,5 +7,7 @@
     <string name="camera_failed">Impossible d\'ouvrir la caméra</string>
     <string name="permission_needed">L\'application a besoin de la caméra pour fonctionner.</string>
     <string name="grant_permission">Autoriser la caméra</string>
-    <string name="film_none">Sans pellicule</string>
+    <string name="film_none">Sans filtre</string>
+    <string name="group_simulations">X-E5</string>
+    <string name="group_films">Pellicules</string>
 </resources>

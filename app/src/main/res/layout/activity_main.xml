@@ -14,10 +14,10 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/controls"
+        app:layout_constraintBottom_toTopOf="@id/filmStrip"
         app:layout_constraintVertical_bias="0.3" />
 
-    <!-- Nom de la pellicule active (le sélecteur arrive à l'étape 3) -->
+    <!-- Nom de la pellicule active -->
     <TextView
         android:id="@+id/filmName"
         android:layout_width="wrap_content"
@@ -43,6 +43,26 @@
         app:layout_constraintEnd_toEndOf="@id/viewFinder"
         app:layout_constraintTop_toTopOf="@id/viewFinder"
         app:layout_constraintBottom_toBottomOf="@id/viewFinder" />
+
+    <!-- Sélecteur de pellicule : bande qui défile horizontalement -->
+    <HorizontalScrollView
+        android:id="@+id/filmStrip"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingVertical="10dp"
+        android:scrollbars="none"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/controls">
+
+        <LinearLayout
+            android:id="@+id/filmChips"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp" />
+    </HorizontalScrollView>
 
     <FrameLayout
         android:id="@+id/controls"

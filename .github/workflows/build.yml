@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,8 +21,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Compiler l'APK
         run: ./gradlew assembleDebug --stacktrace
+      - name: Renommer l'APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk Roll35.apk
       - name: Publier l'APK
         uses: actions/upload-artifact@v4
         with:
           name: roll35-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: Roll35.apk
+      # Chaque envoi sur main crée une version téléchargeable sur la page
+      # « Releases » du dépôt (lien fixe : /releases/latest).
+      - name: Créer la version à télécharger
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Roll35 (version ${{ github.run_number }})
+          body: Télécharger Roll35.apk ci-dessous et l'ouvrir sur le téléphone.
+          files: Roll35.apk
+          make_latest: true

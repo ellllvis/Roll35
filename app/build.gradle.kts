@@ -11,8 +11,19 @@ android {
         applicationId = "fr.elvis.roll35"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = 2
+        versionName = "0.2"
+    }
+
+    // Clé fixe (clé de débogage standard, sans valeur secrète) : chaque APK
+    // compilé sur GitHub peut ainsi mettre à jour le précédent sur le téléphone.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("roll35-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
