@@ -62,9 +62,9 @@ object FilmLibrary {
 
     val all: List<Film> = listOf(
         // --- Les 20 simulations du X-E5 ---
-        Film("standard", "Standard", S, contrast = 10f),
+        Film("standard", "Provia", S, contrast = 10f),
         Film(
-            "vif", "Vif", S,
+            "vif", "Velvia", S,
             saturation = 1.4f, contrast = 30f, shadows = -15f, highlights = -5f,
             hues = listOf(
                 HueShift(220f, sat = 1.3f),
@@ -73,7 +73,7 @@ object FilmLibrary {
             ),
         ),
         Film(
-            "doux", "Doux", S,
+            "doux", "Astia", S,
             saturation = 1.1f, contrast = -15f, shadows = 10f, highlights = 5f,
             hues = listOf(
                 HueShift(220f, sat = 1.15f),
@@ -82,7 +82,7 @@ object FilmLibrary {
             ),
         ),
         Film(
-            "chrome", "Chrome classique", S,
+            "chrome", "Classic Chrome", S,
             saturation = 0.7f, contrast = 15f, shadows = -15f, highlights = 5f,
             shadowTint = Tint(30f, 8f),
             hues = listOf(
@@ -91,19 +91,19 @@ object FilmLibrary {
                 HueShift(120f, shift = -10f, sat = 0.7f),
             ),
         ),
-        Film("realiste", "Réaliste", S, saturation = 1.05f, contrast = 20f, shadows = -10f, highlights = -5f),
+        Film("realiste", "Reala Ace", S, saturation = 1.05f, contrast = 20f, shadows = -10f, highlights = -5f),
         Film(
-            "studio_contraste", "Studio contrasté", S,
+            "studio_contraste", "Pro Neg. Hi", S,
             saturation = 0.9f, contrast = 10f, shadows = -5f,
             hues = listOf(HueShift(25f, shift = 3f)),
         ),
         Film(
-            "studio_doux", "Studio doux", S,
+            "studio_doux", "Pro Neg. Std", S,
             saturation = 0.8f, contrast = -20f, shadows = 10f, highlights = 5f,
             hues = listOf(HueShift(120f, shift = 5f)),
         ),
         Film(
-            "neg_classique", "Négatif classique", S,
+            "neg_classique", "Classic Neg.", S,
             saturation = 0.9f, darkSaturation = 0.75f, contrast = 25f, shadows = -15f, highlights = -10f,
             shadowTint = Tint(170f, 10f), highlightTint = Tint(40f, 8f),
             hues = listOf(
@@ -114,7 +114,7 @@ object FilmLibrary {
             ),
         ),
         Film(
-            "neg_nostalgique", "Négatif nostalgique", S,
+            "neg_nostalgique", "Nostalgic Neg.", S,
             saturation = 1.05f, contrast = -5f, shadows = 10f, highlights = -5f,
             shadowTint = Tint(0f, 5f), highlightTint = Tint(40f, 15f),
             hues = listOf(
@@ -123,7 +123,7 @@ object FilmLibrary {
             ),
         ),
         Film(
-            "cinema", "Cinéma", S,
+            "cinema", "Eterna", S,
             saturation = 0.6f, contrast = -35f, shadows = 20f, highlights = 10f,
             shadowTint = Tint(185f, 6f),
             hues = listOf(
@@ -133,27 +133,27 @@ object FilmLibrary {
             ),
         ),
         Film(
-            "sans_blanchiment", "Sans blanchiment", S,
+            "sans_blanchiment", "Eterna Bleach Bypass", S,
             saturation = 0.4f, contrast = 50f, shadows = -25f, highlights = -10f,
             shadowTint = Tint(215f, 5f),
         ),
-        Film("nb_fin", "N&B fin", S, mono = NEUTRAL, contrast = 20f, shadows = -10f, highlights = -5f, grain = ACROS_GRAIN),
-        Film("nb_fin_jaune", "N&B fin + jaune", S, mono = YELLOW, contrast = 20f, shadows = -10f, highlights = -5f, grain = ACROS_GRAIN),
-        Film("nb_fin_rouge", "N&B fin + rouge", S, mono = RED, contrast = 25f, shadows = -15f, highlights = -5f, grain = ACROS_GRAIN),
-        Film("nb_fin_vert", "N&B fin + vert", S, mono = GREEN, contrast = 20f, shadows = -10f, highlights = -5f, grain = ACROS_GRAIN),
-        Film("nb", "N&B", S, mono = NEUTRAL, contrast = 5f),
-        Film("nb_jaune", "N&B + jaune", S, mono = YELLOW, contrast = 5f),
-        Film("nb_rouge", "N&B + rouge", S, mono = RED, contrast = 10f, shadows = -5f),
-        Film("nb_vert", "N&B + vert", S, mono = GREEN, contrast = 5f),
+        Film("nb_fin", "Acros", S, mono = NEUTRAL, contrast = 20f, shadows = -10f, highlights = -5f, grain = ACROS_GRAIN),
+        Film("nb_fin_jaune", "Acros + Ye", S, mono = YELLOW, contrast = 20f, shadows = -10f, highlights = -5f, grain = ACROS_GRAIN),
+        Film("nb_fin_rouge", "Acros + R", S, mono = RED, contrast = 25f, shadows = -15f, highlights = -5f, grain = ACROS_GRAIN),
+        Film("nb_fin_vert", "Acros + G", S, mono = GREEN, contrast = 20f, shadows = -10f, highlights = -5f, grain = ACROS_GRAIN),
+        Film("nb", "Monochrome", S, mono = NEUTRAL, contrast = 5f),
+        Film("nb_jaune", "Monochrome + Ye", S, mono = YELLOW, contrast = 5f),
+        Film("nb_rouge", "Monochrome + R", S, mono = RED, contrast = 10f, shadows = -5f),
+        Film("nb_vert", "Monochrome + G", S, mono = GREEN, contrast = 5f),
         Film(
-            "sepia", "Sépia", S,
+            "sepia", "Sepia", S,
             mono = NEUTRAL, shadows = 5f, highlights = -5f,
             gradient = listOf(Rgb(0.20f, 0.13f, 0.08f), Rgb(1.00f, 0.94f, 0.82f)),
         ),
 
         // --- Pellicules en plus : CineStill et Pro 400H ---
         Film(
-            "nuit_tungstene", "Nuit tungstène", P,
+            "nuit_tungstene", "CineStill 800T", P,
             saturation = 1.05f, contrast = 10f, shadows = -10f,
             shadowTint = Tint(185f, 12f), highlightTint = Tint(40f, 6f),
             wbShift = -6f,
@@ -161,20 +161,20 @@ object FilmLibrary {
             grain = 0.06f, grainLarge = true, halation = 0.6f,
         ),
         Film(
-            "jour_polyvalent", "Jour polyvalent", P,
+            "jour_polyvalent", "CineStill 400D", P,
             saturation = 0.95f, contrast = -10f, shadows = 5f, highlights = 5f,
             highlightTint = Tint(40f, 6f),
             hues = listOf(HueShift(20f, shift = 3f)),
             grain = 0.03f, halation = 0.3f,
         ),
         Film(
-            "jour_fin", "Jour fin", P,
+            "jour_fin", "CineStill 50D", P,
             saturation = 1.05f, contrast = 5f,
             grain = 0.015f, halation = 0.1f,
         ),
-        Film("nb_cine", "N&B ciné", P, mono = NEUTRAL, contrast = 15f, shadows = -15f, grain = 0.03f),
+        Film("nb_cine", "CineStill BwXX", P, mono = NEUTRAL, contrast = 15f, shadows = -15f, grain = 0.03f),
         Film(
-            "redscale", "Redscale", P,
+            "redscale", "CineStill Redrum", P,
             mono = NEUTRAL, contrast = 10f,
             gradient = listOf(
                 Rgb(0.25f, 0.03f, 0.01f),
@@ -184,7 +184,7 @@ object FilmLibrary {
             grain = 0.06f, grainLarge = true,
         ),
         Film(
-            "pastel_pro", "Pastel pro", P,
+            "pastel_pro", "Fuji Pro 400H", P,
             saturation = 0.85f, contrast = -15f, shadows = 10f, highlights = 10f,
             shadowTint = Tint(170f, 8f), highlightTint = Tint(210f, 4f),
             hues = listOf(
@@ -193,6 +193,22 @@ object FilmLibrary {
                 HueShift(20f, shift = -2f),
             ),
             grain = 0.03f,
+        ),
+
+        // --- Kodak ---
+        // UltraMax 400 : chaude, contrastée, couleurs franches (rouges vifs,
+        // verts tirant vers le jaune), ombres un peu jaune-vert, grain présent.
+        Film(
+            "grand_public_400", "Kodak UltraMax 400", P,
+            saturation = 1.12f, contrast = 15f, shadows = -5f,
+            shadowTint = Tint(80f, 6f), highlightTint = Tint(40f, 8f),
+            wbShift = 6f,
+            hues = listOf(
+                HueShift(0f, sat = 1.15f),
+                HueShift(120f, shift = -8f),
+                HueShift(220f, sat = 1.05f),
+            ),
+            grain = 0.045f,
         ),
     )
 
